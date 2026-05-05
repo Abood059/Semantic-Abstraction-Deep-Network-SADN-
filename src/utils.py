@@ -1,3 +1,11 @@
+import json
+import re
+
+def build_prompt(template, sentences):
+    """بناء البرومبت النهائي بترقيم الجمل المعطاة."""
+    numbered = "\n".join([f"{i}. {s}" for i, s in enumerate(sentences, start=1)])
+    return template.replace("{sentences}", numbered)
+
 def post_process_output(raw_text):
     """استخراج قائمة من 10 جمل من مخرجات النموذج، بأي تنسيق."""
     # 1. محاولة JSON أولاً (تبقى موجودة إن عاد النموذج لاستخدامها)
@@ -14,9 +22,7 @@ def post_process_output(raw_text):
 
     # 2. البحث عن جمل مرقمة (مثل: 1. جملة... 2. جملة...)
     # نبحث عن أرقام تبدأ من 1 وتتزايد، مع نص بعدها
-    # نستخدم regex لالتقاط "رقم. نص" عبر السطور
-    pattern = r'(?:^|\n)\s*(\d{1,3})\.?\s+(.+?)(?=\n\s*\d{1,3}\.?\s+|$)'
-    matches = re.findall(pattern, raw_text, re.DOTALL)
+    matches = re.findall(r'(?:^|\n)\s*(\d{1,3})\.?\s+(.+?)(?=\n\s*\d{1,3}\.?\s+|$)', raw_text, re.DOTALL)
     if matches:
         # نأخذ أول 10 جمل حسب الترقيم
         sentences = [m[1].strip() for m in matches if m[1].strip()]
