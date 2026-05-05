@@ -1,4 +1,7 @@
+import torch
 import logging
+import json
+import os
 from src.database import add_results, get_inputs_for_node
 from src.utils import build_prompt, post_process_output
 
@@ -25,27 +28,26 @@ def run_experiment(config, model, tokenizer):
     num_layers = config['num_layers']
     num_nodes = config['num_nodes_per_layer']
     prompt_template = config['prompt_template']
-    
-    # توليد الجمل الأولية عشوائيًا (أو تحميلها من ملف)
-    # هنا سنقوم بإنشاء 100 جملة عشوائية ثابتة للتجربة
-    import random
-    random.seed(42)  # بذرة للتكرار
-    initial_sentences = [
-        f"الجملة العشوائية رقم {i+1} لمحاكاة الفوضى."
-        for i in range(100)
-    ]
-    # يمكنك استبدال السطر أعلاه بتحميل من ملف JSON لاحقًا
-    
-    # حفظ الجمل الأولية كأنها طبقة 0 عقد وهمية؟ 
-    # سنخصص توزيعها على عقد الطبقة 1 مباشرة:
-    # لكل عقدة 10 جمل مختلفة (مثلاً عقدة i تأخذ الجمل من i*10 إلى (i+1)*10-1)
-    # هذا يتوافق مع فكرة أن كل عقدة تحصل على 10 جمل مختلفة تمامًا.
-    
+
+    # تحميل الجمل الأولية من ملف JSON
+    json_path = os.path.join("data", "initial_sentences.json")
+    if os.path.exists(json_path):
+        with open(json_path, 'r', encoding='utf-8') as f:
+            initial_sentences = json.load(f)
+        logging.info(f"تم تحميل {len(initial_sentences)} جملة أولية من {json_path}")
+    else:
+        # احتياطي في حالة عدم وجود الملف
+        logging.warning(f"الملف {json_path} غير موجود. سيتم توليد جمل عشوائية.")
+        import random
+        random.seed(42)
+        initial_sentences = [f"الجملة العشوائية رقم {i+1} لمحاكاة الفوضى." for i in range(100)]
+
+    # توزيع الجمل على عقد الطبقة الأولى
     for layer in range(1, num_layers + 1):
         logging.info(f"===== بدء الطبقة {layer} =====")
         for node in range(1, num_nodes + 1):
             logging.info(f"معالجة العقدة {node} في الطبقة {layer}")
-            
+
             if layer == 1:
                 # الطبقة 1: خذ 10 جمل من القائمة الأولية الموزعة
                 start_idx = (node - 1) * 10
@@ -54,10 +56,10 @@ def run_experiment(config, model, tokenizer):
             else:
                 # الطبقات الأخرى: اجمع الجملة رقم (node) من كل عقدة سابقة
                 input_sentences = get_inputs_for_node(layer, node, num_nodes)
-            
+
             # بناء البرومبت
             prompt = build_prompt(prompt_template, input_sentences)
-            
+
             # توليد الجمل
             try:
                 generated = generate_sentences(config, model, tokenizer, prompt)
@@ -67,7 +69,7 @@ def run_experiment(config, model, tokenizer):
                     generated += [""] * (10 - len(generated))
                 elif len(generated) > 10:
                     generated = generated[:10]
-                
+
                 add_results(layer, node, generated)
                 logging.info(f"تم إنتاج 10 جمل للعقدة {node}.")
             except Exception as e:
