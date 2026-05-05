@@ -3,7 +3,7 @@ import yaml
 import logging
 from pathlib import Path
 from src.model_loader import load_model
-from src.database import init_db, add_result, get_inputs_for_node
+from src.database import init_db, add_results, get_inputs_for_node
 from src.experiment import run_experiment
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
