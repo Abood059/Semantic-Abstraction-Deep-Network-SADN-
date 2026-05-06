@@ -1,27 +1,23 @@
-# إعدادات التوزيع
-num_layers: 3                     # اختبار أولي
-num_nodes_per_layer: 10
+# SADN - إعدادات التجربة الإنجليزية لـ Mistral
+num_layers: 3                       # للاختبار الأولي
+num_nodes_per_layer: 5              # 5 عقد في كل طبقة
+num_output_sentences: 5             # عدد الجمل التي تنتجها كل عقدة (5)
 
-# إعدادات النموذج (مفتوح، لا يحتاج مصادقة)
 model_name: "mistralai/Mistral-7B-Instruct-v0.3"
-
-# تفعيل التكميم 4-bit ليتسع في T4
 use_4bit: true
 
-# إعدادات التوليد
-temperature: 0.7
-max_new_tokens: 800
+temperature: 0.6                    # التزام أعلى
+max_new_tokens: 600                 # مساحة كافية لـ 5 جمل
 do_sample: true
 
-# قاعدة البيانات
 db_path: "experiment_results.db"
 
-# البرومبت المحسّن (Mistral لا يحتاج tokens خاصة مثل Llama)
 prompt_template: |
-  [INST] أنت محلل دلالي دقيق. ستُعطى 10 جمل عشوائية. مهمتك: إيجاد الرابط الجوهري بينها وكتابة 10 جمل جديدة تعبر عنه.
-  أجب **فقط** بقائمة JSON تحتوي على 10 نصوص بالضبط. لا تشرح. لا تضف أي كلام آخر.
-  مثال للإخراج الصحيح:
-  ["الجملة الأولى", "الجملة الثانية", "الجملة الثالثة", "الجملة الرابعة", "الجملة الخامسة", "الجملة السادسة", "الجملة السابعة", "الجملة الثامنة", "الجملة التاسعة", "الجملة العاشرة"]
+  [INST] You are a precise semantic analyst. You will be given 5 random sentences that appear unrelated.
+  Your task: find the single deep thematic connection that ties them together, then write exactly 5 new sentences that express this connection.
+  Output ONLY a JSON list of 5 strings. No other text. Do not explain.
+  Example output: ["sentence one", "sentence two", "sentence three", "sentence four", "sentence five"]
   
-  الجمل المعطاة:
+  The 5 given sentences:
   {sentences} [/INST]
+  [

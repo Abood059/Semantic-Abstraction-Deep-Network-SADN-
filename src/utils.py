@@ -5,10 +5,13 @@ def build_prompt(template, sentences):
     numbered = "\n".join([f"{i}. {s}" for i, s in enumerate(sentences, start=1)])
     return template.replace("{sentences}", numbered)
 
-def post_process_output(raw_text):
-    """استخراج 10 جمل نظيفة من مخرج النموذج."""
+def post_process_output(raw_text, num_sentences=10):
+    """
+    تستخرج num_sentences جمل من مخرج النموذج.
+    تعالج JSON وقوائم مرقمة مع تجاهل الحوار الزائد.
+    """
     text = raw_text.strip()
-    # إزالة أي tokens خاصة (Llama, Mistral, etc.)
+    # تنظيف tokens خاصة (Mistral, Llama...)
     text = re.sub(r'<\|.*?\|>', '', text)
     text = re.sub(r'\[INST\].*?\[/INST\]', '', text, flags=re.DOTALL)
     text = re.sub(r'(Human|Assistant|User|System)\s*:', '', text, flags=re.IGNORECASE)
@@ -21,10 +24,10 @@ def post_process_output(raw_text):
         try:
             arr = json.loads(candidate)
             if isinstance(arr, list):
-                sentences = [s.strip() for s in arr if isinstance(s, str) and s.strip()]
-                while len(sentences) < 10:
+                sentences = [str(s).strip() for s in arr if str(s).strip()]
+                while len(sentences) < num_sentences:
                     sentences.append("")
-                return sentences[:10]
+                return sentences[:num_sentences]
         except:
             pass
 
@@ -32,32 +35,32 @@ def post_process_output(raw_text):
     lines = text.split('\n')
     candidates = []
     for line in lines:
-        if re.match(r'^\s*(Human|Assistant|Note|ملاحظة|الخ)', line, re.IGNORECASE):
+        if re.match(r'^\s*(Human|Assistant|Note|ملاحظة|The|Output|Example)', line, re.IGNORECASE):
             continue
         m = re.match(r'^\s*(\d{1,2})\.?\s+(.+)', line)
         if m:
             seq = int(m.group(1))
             content = m.group(2).strip()
-            content = re.split(r'\s*(Human|Assistant|Note|ملاحظة)\s*:', content)[0].strip()
+            content = re.split(r'\s*(Human|Assistant|Note)\s*:', content)[0].strip()
             if content and not re.match(r'^\d+$', content):
                 candidates.append((seq, content))
         else:
             stripped = line.strip().strip('"').strip(',')
             if stripped and not re.match(r'^[\[\]{}]', stripped) and not re.match(r'^\d+$', stripped):
-                if not re.search(r'(مثال|الجمل|أخرج|أجب)', stripped, re.IGNORECASE):
+                if not re.search(r'(Example|Output|الجمل|أخرج)', stripped, re.IGNORECASE):
                     candidates.append((len(candidates)+1, stripped))
 
     if candidates:
         candidates.sort(key=lambda x: x[0])
         sentences = []
         for _, txt in candidates:
-            if len(sentences) >= 10:
+            if len(sentences) >= num_sentences:
                 break
             if txt not in sentences:
                 sentences.append(txt)
-        while len(sentences) < 10:
+        while len(sentences) < num_sentences:
             sentences.append("")
-        return sentences[:10]
+        return sentences[:num_sentences]
 
     # 3. فشل تام
-    return [""] * 10
+    return [""] * num_sentences
