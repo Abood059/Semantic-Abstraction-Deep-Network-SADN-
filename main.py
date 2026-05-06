@@ -1,6 +1,7 @@
 import argparse
 import yaml
 import logging
+import os
 from pathlib import Path
 from src.model_loader import load_model
 from src.database import init_db, add_results, get_inputs_for_node
@@ -17,10 +18,18 @@ def main(config_path):
     logging.info(f"الطبقات: {config['num_layers']} | العقد لكل طبقة: {config['num_nodes_per_layer']}")
     logging.info(f"النموذج: {config['model_name']}")
 
+    # عرض المسار الحالي لضمان الشفافية
+    logging.info(f"مجلد العمل الحالي: {os.getcwd()}")
+    # حساب وعرض المسار المطلق لقاعدة البيانات
+    db_path = config['db_path']
+    if not os.path.isabs(db_path):
+        db_path = os.path.abspath(db_path)
+    logging.info(f"المسار المطلق لقاعدة البيانات: {db_path}")
+
     # تحميل النموذج
     model, tokenizer = load_model(config)
     
-    # تجهيز قاعدة البيانات
+    # تجهيز قاعدة البيانات (ستستخدم المسار من config وتجعله مطلقاً داخل init_db)
     init_db(config['db_path'])
     
     # تشغيل التجربة
