@@ -1,16 +1,29 @@
 import sqlite3
+import os
 import logging
 
 DB_FILE = None
 
 def get_connection():
+    """إنشاء اتصال بقاعدة البيانات الحالية."""
+    if DB_FILE is None:
+        raise RuntimeError("قاعدة البيانات غير مهيأة. تأكد من استدعاء init_db أولاً.")
     conn = sqlite3.connect(DB_FILE)
     conn.row_factory = sqlite3.Row
     return conn
 
 def init_db(db_path):
+    """
+    تهيئة قاعدة البيانات وحفظ المسار.
+    يحول المسار النسبي إلى مطلق بناءً على مجلد العمل الحالي لضمان ثباته.
+    """
     global DB_FILE
+    # إذا كان المسار نسبياً، اجعله مطلقاً
+    if not os.path.isabs(db_path):
+        db_path = os.path.abspath(db_path)
     DB_FILE = db_path
+    logging.info(f"قاعدة البيانات ستُنشأ في: {DB_FILE}")
+    
     conn = get_connection()
     c = conn.cursor()
     c.execute('''
