@@ -26,6 +26,7 @@ def load_model(config):
         trust_remote_code=True
     )
     
+    # ضبط pad_token لتجنب الأخطاء
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
     
